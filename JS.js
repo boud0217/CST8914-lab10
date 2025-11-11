@@ -344,3 +344,114 @@ window.addEventListener('load', function () {
     new MenuButtonActions(menuButtons[i], performMenuAction);
   }
 });
+
+
+// LAB 10 task implementation
+document.addEventListener("DOMContentLoaded", function () {
+  const menuButton = document.getElementById("menubutton1");
+  const menu = document.getElementById("menu1");
+  const output = document.getElementById("action_output");
+  const menuItems = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+
+  let currentIndex = -1; // -1 means nothing selected yet
+  let isOpen = false;
+
+  // Initialize roving tabindex
+  menuItems.forEach((item) => {
+    item.setAttribute("tabindex", "-1");
+  });
+
+  function openMenu() {
+    if (isOpen) return;
+    isOpen = true;
+    menu.style.display = "block";
+    menuButton.setAttribute("aria-expanded", "true");
+
+    // If something was selected before, restore focus to it
+    if (currentIndex >= 0) {
+      setFocus(currentIndex);
+    } else {
+      // No previous selection: leave all tabindex -1, nothing focused
+      menuItems.forEach((item) => item.setAttribute("tabindex", "-1"));
+    }
+  }
+
+  function closeMenu() {
+    if (!isOpen) return;
+    isOpen = false;
+    menu.style.display = "none";
+    menuButton.setAttribute("aria-expanded", "false");
+    menuButton.focus();
+  }
+
+  function setFocus(newIndex) {
+    if (currentIndex >= 0) {
+      menuItems[currentIndex].setAttribute("tabindex", "-1");
+    }
+    currentIndex = (newIndex + menuItems.length) % menuItems.length;
+    const el = menuItems[currentIndex];
+    el.setAttribute("tabindex", "0");
+    el.focus();
+  }
+
+  function activateCurrent() {
+    if (currentIndex >= 0) {
+      output.value = menuItems[currentIndex].textContent.trim();
+    }
+    closeMenu();
+  }
+
+  // Button interactions
+  menuButton.addEventListener("click", () => {
+    isOpen ? closeMenu() : openMenu();
+  });
+
+  menuButton.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openMenu();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      openMenu();
+      // If nothing selected, start at first item
+      if (currentIndex === -1) setFocus(0);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      openMenu();
+      // If nothing selected, start at last item
+      if (currentIndex === -1) setFocus(menuItems.length - 1);
+    }
+  });
+
+  // Per-item keydown
+  menuItems.forEach((item, idx) => {
+    item.addEventListener("click", () => {
+      currentIndex = idx;
+      activateCurrent();
+    });
+
+    item.addEventListener("keydown", (e) => {
+      if (!isOpen) return;
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setFocus(idx + 1);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setFocus(idx - 1);
+          break;
+        case "Enter":
+          e.preventDefault();
+          currentIndex = idx;
+          activateCurrent();
+          break;
+        case "Escape":
+          e.preventDefault();
+          closeMenu();
+          break;
+      }
+    });
+  });
+});
